@@ -14,3 +14,5 @@ mc号为26742 章节号为334263
 2.在biliibli漫画主页按F12，切换到network选项卡，刷新页面
 
 3.选择第一行（manga.bilibili.com），在右侧找到cookies这一项，复制其中全部内容
+
+新版本的图片解析部分来自 https://github.com/flaribbit/bilibili-manga-spider
