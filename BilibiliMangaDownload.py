@@ -1,4 +1,10 @@
-import os, sys, getopt, zipfile, json, re, requests
+import getopt
+import json
+import os
+import re
+import requests
+import sys
+import zipfile
 from io import BytesIO
 
 URL_DETAIL = "https://manga.bilibili.com/twirp/comic.v2.Comic/ComicDetail?device=pc&platform=web"
@@ -9,7 +15,7 @@ URL_IMAGE_TOKEN = "https://manga.bilibili.com/twirp/comic.v1.Comic/ImageToken?de
 def downloadImage(url, path):
     r = requests.get(url, stream=True, cookies = cookies)
     f = open(path, 'wb')
-    for chunk in r.iter_content(chunk_size=1024):
+    for chunk in r.iter_content(chunk_size = 1024):
         if chunk:
             f.write(chunk)
     f.close()
@@ -43,30 +49,30 @@ def getChName(chList, chNum):
     return None
 
 def downloadCh(mcNum, chNum, chName):
-    if not(os.path.exists('Download/%s/%s' % (mangaTitle, chName))):
-        os.mkdir('Download/%s/%s' % (mangaTitle, chName))
+    if not(os.path.exists('downloads/%s/%s' % (mangaTitle, chName))):
+        os.mkdir('downloads/%s/%s' % (mangaTitle, chName))
     print('[INFO]', chName, '开始下载')
     imagesURL = getImages(mcNum, chNum)
     for idx, url in enumerate(imagesURL, 1):
         fullURL = getToken(url)
-        path = 'Download/%s/%s/%s.jpg' % (mangaTitle, chName, str(idx))
+        path = 'downloads/%s/%s/%s.jpg' % (mangaTitle, chName, str(idx))
         downloadImage(fullURL, path)
     print('[INFO]', chName, '下载完成')
 
-def filterStr(sName):
-    return re.sub(r'[\/:*?"<>|\r\n]', '', sName).strip().lstrip().rstrip('.')
+def filterStr(name):
+    return re.sub(r'[\/:*?"<>|]', '', name).strip().rstrip('.')
 
 if __name__ == "__main__":
-    if not(os.path.exists('Download')):
-        os.mkdir('Download')
+    if not(os.path.exists('downloads')):
+        os.mkdir('downloads')
 
     print('请输入mc号：')
     mcNum = int(input())
     mangaTitle, chList = getMangaInfo(mcNum)
     print('[INFO]', mangaTitle)
 
-    if not(os.path.exists('Download/%s' % mangaTitle)):
-        os.mkdir('Download/%s' % mangaTitle)
+    if not(os.path.exists('downloads/%s' % mangaTitle)):
+        os.mkdir('downloads/%s' % mangaTitle)
 
     print('1.下载单章\n2.下载全本')
     isFull = input()
