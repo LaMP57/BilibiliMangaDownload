@@ -1,4 +1,4 @@
-import os, sys, getopt, zipfile, json, requests
+import os, sys, getopt, zipfile, json, re, requests
 from io import BytesIO
 
 URL_DETAIL = "https://manga.bilibili.com/twirp/comic.v2.Comic/ComicDetail?device=pc&platform=web"
@@ -17,7 +17,7 @@ def downloadImage(url, path):
 def getMangaInfo(mcNum):
     data = requests.post(URL_DETAIL, data={'comic_id': mcNum}).json()['data']
     data['ep_list'].reverse()
-    return data['title'], data['ep_list']
+    return filterStr(data['title']), data['ep_list']
 
 def getImages(mcNum, chNum):
     data = requests.post(URL_IMAGE_INDEX, data = {'ep_id': chNum}, cookies = cookies).json()['data']
@@ -37,9 +37,9 @@ def getToken(url):
     return '%s?token=%s' % (data["url"], data["token"])
 
 def getChName(chList, chNum):
-    for i in chList:
-        if i['id'] == chNum:
-            return i['short_title'] + i['title']
+    for ch in chList:
+        if ch['id'] == chNum:
+            return filterStr(ch['short_title'] + ch['title'])
     return None
 
 def downloadCh(mcNum, chNum, chName):
@@ -52,6 +52,9 @@ def downloadCh(mcNum, chNum, chName):
         path = 'Download/%s/%s/%s.jpg' % (mangaTitle, chName, str(idx))
         downloadImage(fullURL, path)
     print('[INFO]', chName, '下载完成')
+
+def filterStr(sName):
+    return re.sub(r'[\/:*?"<>|\r\n]', '', sName).strip().lstrip().rstrip('.')
 
 if __name__ == "__main__":
     if not(os.path.exists('Download')):
@@ -91,7 +94,7 @@ if __name__ == "__main__":
 
     if isFull:
         for ch in chList:
-            chName = ch['short_title'] + ch['title']
+            chName = filterStr(ch['short_title'] + ch['title'])
             downloadCh(mcNum, ch['id'], chName)
     else:
         chName = getChName(chList, chNum)
