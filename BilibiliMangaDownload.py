@@ -51,13 +51,16 @@ def getChName(chList, chNum):
 def downloadCh(mcNum, chNum, chName):
     if not(os.path.exists('downloads/%s/%s' % (mangaTitle, chName))):
         os.mkdir('downloads/%s/%s' % (mangaTitle, chName))
-    print('[INFO]', chName, '开始下载')
-    imagesURL = getImages(mcNum, chNum)
-    for idx, url in enumerate(imagesURL, 1):
-        fullURL = getToken(url)
-        path = 'downloads/%s/%s/%s.jpg' % (mangaTitle, chName, str(idx))
-        downloadImage(fullURL, path)
-    print('[INFO]', chName, '下载完成')
+    print('[INFO]%s开始下载' % chName)
+    try:
+        imagesURL = getImages(mcNum, chNum)
+        for idx, url in enumerate(imagesURL, 1):
+            fullURL = getToken(url)
+            path = 'downloads/%s/%s/%s.jpg' % (mangaTitle, chName, str(idx))
+            downloadImage(fullURL, path)
+        print('[INFO]%s下载完成' % chName)
+    except:
+        print('[ERROR]%s下载失败' % chName)
 
 def filterStr(name):
     return re.sub(r'[\/:*?"<>|]', '', name).strip().rstrip('.')
