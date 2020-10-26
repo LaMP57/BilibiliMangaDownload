@@ -92,11 +92,8 @@ if __name__ == "__main__":
 
     cookies = {}
     if needCookies:
-        print('请按说明粘贴cookies：')
-        cookiesStr = input()
-        for line in cookiesStr.split(';'):
-            key, value = line.strip().split('=', 1)
-            cookies[key] = value
+        print('请按说明粘贴SESSDATA：')
+        cookies['SESSDATA'] = input().strip()
 
     if isFull:
         for ch in chList:
