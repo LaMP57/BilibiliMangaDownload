@@ -53,10 +53,11 @@ def downloadCh(mcNum, chNum, chName):
         os.mkdir('downloads/%s/%s' % (mangaTitle, chName))
     print('[INFO]%s开始下载' % chName)
     try:
-        imagesURL = getImages(mcNum, chNum)
-        for idx, url in enumerate(imagesURL, 1):
+        imagesURLs = getImages(mcNum, chNum)
+        imagesIndexLength = len(str(len(imagesURLs)))
+        for idx, url in enumerate(imagesURLs, 1):
             fullURL = getToken(url)
-            path = 'downloads/%s/%s/%s.jpg' % (mangaTitle, chName, str(idx))
+            path = 'downloads/%s/%s/%s.jpg' % (mangaTitle, chName, str(idx).zfill(imagesIndexLength))
             downloadImage(fullURL, path)
         print('[INFO]%s下载完成' % chName)
     except:
