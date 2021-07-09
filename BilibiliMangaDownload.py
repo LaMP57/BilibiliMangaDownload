@@ -1,11 +1,10 @@
-import getopt
 import json
 import os
 import re
 import requests
-import sys
 import zipfile
 from io import BytesIO
+from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
 
 URL_DETAIL = "https://manga.bilibili.com/twirp/comic.v2.Comic/ComicDetail?device=pc&platform=web"
 URL_IMAGE_INDEX = "https://manga.bilibili.com/twirp/comic.v1.Comic/GetImageIndex?device=pc&platform=web"
@@ -13,7 +12,7 @@ URL_MANGA_HOST = "https://manga.hdslb.com"
 URL_IMAGE_TOKEN = "https://manga.bilibili.com/twirp/comic.v1.Comic/ImageToken?device=pc&platform=web"
 
 def downloadImage(url, path):
-    r = requests.get(url, stream=True, cookies = cookies)
+    r = requests.get(url, stream = True, cookies = cookies)
     f = open(path, 'wb')
     for chunk in r.iter_content(chunk_size = 1024):
         if chunk:
@@ -21,7 +20,7 @@ def downloadImage(url, path):
     f.close()
 
 def getMangaInfo(mcNum):
-    data = requests.post(URL_DETAIL, data={'comic_id': mcNum}).json()['data']
+    data = requests.post(URL_DETAIL, data = {'comic_id': mcNum}).json()['data']
     data['ep_list'].reverse()
     return filterStr(data['title']), data['ep_list']
 
@@ -30,7 +29,7 @@ def getImages(mcNum, chNum):
     data = bytearray(requests.get(data['host'] + data['path']).content[9:])
     key = [chNum&0xff, chNum>>8&0xff, chNum>>16&0xff, chNum>>24&0xff, mcNum&0xff, mcNum>>8&0xff, mcNum>>16&0xff, mcNum>>24&0xff]
     for i in range(len(data)):
-        data[i]^=key[i%8]
+        data[i] ^= key[i%8]
     file = BytesIO(data)
     zf = zipfile.ZipFile(file)
     data = json.loads(zf.read('index.dat'))
@@ -38,71 +37,70 @@ def getImages(mcNum, chNum):
     file.close()
     return data['pics']
 
-def getToken(url):
+def getURLwithToken(url):
     data = requests.post(URL_IMAGE_TOKEN, data = {"urls": "[\""+url+"\"]"}, cookies = cookies).json()["data"][0]
     return '%s?token=%s' % (data["url"], data["token"])
 
-def getChName(chList, chNum):
-    for ch in chList:
-        if ch['id'] == chNum:
-            return filterStr(ch['short_title'] + ch['title'])
+def getChapterName(chapterList, chapterID):
+    for chapte in chapterList:
+        if chapte['id'] == chapterID:
+            return filterStr(chapte['short_title'] + ' ' + chapte['title'])
     return None
 
-def downloadCh(mcNum, chNum, chName):
-    if not(os.path.exists('downloads/%s/%s' % (mangaTitle, chName))):
-        os.mkdir('downloads/%s/%s' % (mangaTitle, chName))
-    print('[INFO]%s开始下载' % chName)
+def downloadChapter(mcNum, chapterID, chapterName):
+    if not(os.path.exists('downloads/%s/%s' % (mangaTitle, chapterName))):
+        os.mkdir('downloads/%s/%s' % (mangaTitle, chapterName))
+    print('[INFO]%s开始下载' % chapterName)
     try:
-        imagesURLs = getImages(mcNum, chNum)
+        imagesURLs = getImages(mcNum, chapterID)
         imagesIndexLength = len(str(len(imagesURLs)))
+        tasks = list()
         for idx, url in enumerate(imagesURLs, 1):
-            fullURL = getToken(url)
-            path = 'downloads/%s/%s/%s.jpg' % (mangaTitle, chName, str(idx).zfill(imagesIndexLength))
-            downloadImage(fullURL, path)
-        print('[INFO]%s下载完成' % chName)
+            fullURL = getURLwithToken(url)
+            path = 'downloads/%s/%s/%s.jpg' % (mangaTitle, chapterName, str(idx).zfill(imagesIndexLength))
+            tasks.append(pool.submit(downloadImage, fullURL, path))
+        wait(tasks, return_when = ALL_COMPLETED)
+        print('[INFO]%s下载完成' % chapterName)
     except:
-        print('[ERROR]%s下载失败' % chName)
+        print('[ERROR]%s下载失败' % chapterName)
 
 def filterStr(name):
     return re.sub(r'[\/:*?"<>|]', '', name).strip().rstrip('.')
 
 if __name__ == "__main__":
+    pool = ThreadPoolExecutor(max_workers=4)
     if not(os.path.exists('downloads')):
         os.mkdir('downloads')
 
     print('请输入mc号：')
+    print('mc', end='')
     mcNum = int(input())
-    mangaTitle, chList = getMangaInfo(mcNum)
+    mangaTitle, chapterList = getMangaInfo(mcNum)
     print('[INFO]', mangaTitle)
 
     if not(os.path.exists('downloads/%s' % mangaTitle)):
         os.mkdir('downloads/%s' % mangaTitle)
 
     print('1.下载单章\n2.下载全本')
-    isFull = input()
-    if isFull == '1':
-        isFull = False
+    downloadAll = input()
+    if downloadAll == '1':
+        downloadAll = False
         print('请输入要下载的章节号：')
-        chNum = int(input())
+        chapterID = int(input())
     else:
-        isFull = True
+        downloadAll = True
 
     print('1.均为免费章节\n2.包含付费章节')
-    needCookies = input()
-    if needCookies == '1':
-        needCookies = False
-    else:
-        needCookies = True
-
-    cookies = {}
-    if needCookies:
+    needsLogin = input()
+    cookies = dict()
+    if needsLogin == '2':
         print('请按说明粘贴SESSDATA：')
         cookies['SESSDATA'] = input().strip()
 
-    if isFull:
-        for ch in chList:
-            chName = filterStr(ch['short_title'] + ch['title'])
-            downloadCh(mcNum, ch['id'], chName)
+    if downloadAll:
+        for chapter in chapterList:
+            chapterName = filterStr(chapter['short_title'] + ' ' + chapter['title'])
+            downloadChapter(mcNum, chapter['id'], chapterName)
     else:
-        chName = getChName(chList, chNum)
-        downloadCh(mcNum, chNum, chName)
+        chapterName = getChapterName(chapterList, chapterID)
+        downloadChapter(mcNum, chapterID, chapterName)
