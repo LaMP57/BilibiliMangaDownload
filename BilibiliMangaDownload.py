@@ -13,11 +13,15 @@ URL_IMAGE_TOKEN = "https://manga.bilibili.com/twirp/comic.v1.Comic/ImageToken?de
 
 def downloadImage(url, path):
     r = requests.get(url, stream = True, cookies = cookies)
-    f = open(path, 'wb')
-    for chunk in r.iter_content(chunk_size = 1024):
-        if chunk:
-            f.write(chunk)
-    f.close()
+    if r.content.endswith(b'\xff\xd9'):
+        f = open(path, 'wb')
+        for chunk in r.iter_content(chunk_size = 1024):
+            if chunk:
+                f.write(chunk)
+        f.close()
+    else:
+        print("[ERROR]" + path + " 下载失败，重试中...")
+        downloadImage(url, path)
 
 def getMangaInfo(mcNum):
     data = requests.post(URL_DETAIL, data = {'comic_id': mcNum}).json()['data']
