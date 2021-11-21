@@ -11,7 +11,7 @@ URL_IMAGE_INDEX = "https://manga.bilibili.com/twirp/comic.v1.Comic/GetImageIndex
 URL_MANGA_HOST = "https://manga.hdslb.com"
 URL_IMAGE_TOKEN = "https://manga.bilibili.com/twirp/comic.v1.Comic/ImageToken?device=pc&platform=web"
 
-def downloadImage(url, path):
+def downloadImage(url, path, retry = False):
     r = requests.get(url, stream = True, cookies = cookies)
     if r.content.endswith(b'\xff\xd9'):
         f = open(path, 'wb')
@@ -19,9 +19,11 @@ def downloadImage(url, path):
             if chunk:
                 f.write(chunk)
         f.close()
+        if retry:
+            print("[INFO]" + path + " 下载成功")
     else:
         print("[ERROR]" + path + " 下载失败，重试中...")
-        downloadImage(url, path)
+        downloadImage(url, path, retry = True)
 
 def getMangaInfo(mcNum):
     data = requests.post(URL_DETAIL, data = {'comic_id': mcNum}).json()['data']
