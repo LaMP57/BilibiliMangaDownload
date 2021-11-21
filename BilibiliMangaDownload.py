@@ -69,7 +69,7 @@ def downloadChapter(mcNum, chapterID, chapterName):
         print('[ERROR]%s下载失败' % chapterName)
 
 def filterStr(name):
-    return re.sub(r'[\/:*?"<>|]', '', name).strip().rstrip('.')
+    return re.sub(r'[\\\/:*?"<>|]', '', name).strip().rstrip('.')
 
 if __name__ == "__main__":
     pool = ThreadPoolExecutor(max_workers=4)
