@@ -19,7 +19,7 @@ def downloadImage(url, path, retry = 0):
             if chunk:
                 f.write(chunk)
         f.close()
-    elif retry < 3:
+    elif retry < 10:
         downloadImage(url, path, retry + 1)
     else:
         print("[ERROR]%s图片下载失败" % path)
